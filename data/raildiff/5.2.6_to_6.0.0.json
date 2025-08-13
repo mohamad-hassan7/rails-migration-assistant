@@ -1,0 +1,54 @@
+{
+  "old_version": "5.2.6",
+  "new_version": "6.0.0",
+  "diffs": [
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "config.load_defaults 5.2"
+      ],
+      "after_code": [
+        "config.load_defaults 6.0"
+      ]
+    },
+    {
+      "file_path": "app/controllers/application_controller.rb",
+      "before_code": [
+        "class ApplicationController < ActionController::Base",
+        "  protect_from_forgery with: :exception"
+      ],
+      "after_code": [
+        "class ApplicationController < ActionController::Base",
+        "  protect_from_forgery with: :exception",
+        "",
+        "  # Zeitwerk autoloader configuration",
+        "  # No explicit require statements needed"
+      ]
+    },
+    {
+      "file_path": "config/routes.rb",
+      "before_code": [
+        "Rails.application.routes.draw do",
+        "  root 'home#index'",
+        "end"
+      ],
+      "after_code": [
+        "Rails.application.routes.draw do",
+        "  root 'home#index'",
+        "  ",
+        "  # Multiple databases support",
+        "  # resources :posts, database: :primary",
+        "end"
+      ]
+    },
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'rails', '~> 5.2.6'"
+      ],
+      "after_code": [
+        "gem 'rails', '~> 6.0.0'"
+      ]
+    }
+  ]
+}

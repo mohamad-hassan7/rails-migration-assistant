@@ -1,0 +1,58 @@
+{
+  "old_version": "6.1.7",
+  "new_version": "7.0.8",
+  "diffs": [
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "config.load_defaults 6.1"
+      ],
+      "after_code": [
+        "config.load_defaults 7.0"
+      ]
+    },
+    {
+      "file_path": "app/javascript/packs/application.js",
+      "before_code": [
+        "import Rails from \"@rails/ujs\"",
+        "import Turbolinks from \"turbolinks\"",
+        "import * as ActiveStorage from \"@rails/activestorage\"",
+        "import \"channels\"",
+        "",
+        "Rails.start()",
+        "Turbolinks.start()",
+        "ActiveStorage.start()"
+      ],
+      "after_code": [
+        "import Rails from \"@rails/ujs\"",
+        "import \"@hotwired/turbo-rails\"",
+        "import * as ActiveStorage from \"@rails/activestorage\"",
+        "import \"channels\"",
+        "",
+        "Rails.start()",
+        "ActiveStorage.start()"
+      ]
+    },
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'rails', '~> 6.1.7'",
+        "gem 'turbolinks', '~> 5'"
+      ],
+      "after_code": [
+        "gem 'rails', '~> 7.0.8'",
+        "gem 'turbo-rails'",
+        "gem 'stimulus-rails'"
+      ]
+    },
+    {
+      "file_path": "app/views/layouts/application.html.erb",
+      "before_code": [
+        "<%= javascript_pack_tag 'application', 'data-turbolinks-track': 'reload' %>"
+      ],
+      "after_code": [
+        "<%= javascript_importmap_tags %>"
+      ]
+    }
+  ]
+}

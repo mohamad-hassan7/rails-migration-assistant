@@ -1,0 +1,31 @@
+{
+  "name": "Rails Migration Assistant",
+  "version": "1.0.0",
+  "description": "AI-powered Rails upgrade assistance with dual LLM support",
+  "features": [
+    "\ud83e\udd16 Dual AI Backend Support (Gemini API + Local LLM)",
+    "\ud83d\udcda Smart Documentation System (85K+ optimized chunks)",
+    "\ud83d\udd04 RailsDiff Integration",
+    "\ud83d\udda5\ufe0f Multiple Interfaces (GUI, CLI, API)",
+    "\ud83d\udd12 Secure Offline Processing",
+    "\ud83d\udcca Comprehensive Testing Suite"
+  ],
+  "requirements": {
+    "python": ">=3.8",
+    "ram": "8GB+ (16GB+ recommended for local LLM)",
+    "gpu": "CUDA-compatible (recommended for local LLM)",
+    "storage": "10GB+ for documentation and models"
+  },
+  "installation": [
+    "git clone https://github.com/your-username/rails-migration-assistant.git",
+    "cd rails-migration-assistant",
+    "python -m venv .venv",
+    "source .venv/bin/activate  # On Windows: .venv\\Scripts\\activate",
+    "pip install -r requirements.txt"
+  ],
+  "usage": {
+    "cli": "python rails_upgrade_suggestions.py 'upgrade ActiveRecord'",
+    "cli_local": "python rails_upgrade_suggestions.py 'upgrade ActiveRecord' --local",
+    "gui": "python rails_upgrade_gui.py"
+  }
+}

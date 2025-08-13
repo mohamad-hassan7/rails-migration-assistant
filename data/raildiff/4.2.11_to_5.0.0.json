@@ -1,0 +1,55 @@
+{
+  "old_version": "4.2.11",
+  "new_version": "5.0.0",
+  "diffs": [
+    {
+      "file_path": "app/models/application_record.rb",
+      "before_code": [],
+      "after_code": [
+        "class ApplicationRecord < ActiveRecord::Base",
+        "  self.abstract_class = true",
+        "end"
+      ]
+    },
+    {
+      "file_path": "app/controllers/application_controller.rb",
+      "before_code": [
+        "class ApplicationController < ActionController::Base",
+        "  protect_from_forgery with: :exception"
+      ],
+      "after_code": [
+        "class ApplicationController < ActionController::Base",
+        "  protect_from_forgery with: :exception",
+        "  before_action :configure_permitted_parameters, if: :devise_controller?",
+        "",
+        "  private",
+        "",
+        "  def configure_permitted_parameters",
+        "    devise_parameter_sanitizer.permit(:sign_up, keys: [:name])",
+        "  end"
+      ]
+    },
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "require File.expand_path('../boot', __FILE__)",
+        "require 'rails/all'"
+      ],
+      "after_code": [
+        "require_relative 'boot'",
+        "require 'rails/all'"
+      ]
+    },
+    {
+      "file_path": "app/models/user.rb",
+      "before_code": [
+        "class User < ActiveRecord::Base",
+        "  validates :email, presence: true"
+      ],
+      "after_code": [
+        "class User < ApplicationRecord",
+        "  validates :email, presence: true"
+      ]
+    }
+  ]
+}

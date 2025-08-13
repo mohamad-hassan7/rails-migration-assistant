@@ -1,0 +1,60 @@
+# ===================================================================
+# Rails Upgrade Agent - Dependencies
+# ===================================================================
+
+# Core Dependencies
+# -----------------
+numpy>=1.21.0
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.0
+gitpython>=3.1.0
+python-dotenv>=0.19.0
+
+# AI/ML Models
+# ------------
+google-generativeai>=0.3.0    # Gemini API integration
+transformers>=4.35.0          # HuggingFace transformers for local LLM
+torch>=2.0.0                  # PyTorch backend
+bitsandbytes>=0.41.0          # 4-bit quantization for memory efficiency
+accelerate>=0.20.0            # Optimized model loading
+
+# Data Processing & Web
+# ---------------------
+requests>=2.25.0
+beautifulsoup4>=4.9.0
+lxml>=4.6.0
+
+# GUI Framework
+# -------------
+tkinter-page>=7.0.0  # Enhanced tkinter (optional)
+
+# Development & Testing
+# ---------------------
+pytest>=6.2.0
+pytest-cov>=2.12.0
+
+# Optional Performance Enhancements
+# ----------------------------------
+# Uncomment these for additional optimizations:
+# auto-gptq>=0.4.0           # GPTQ quantized models
+# optimum>=1.12.0           # ONNX and hardware optimizations  
+# flash-attn>=2.0.0         # Flash attention for faster inference
+# xformers>=0.0.20          # Memory efficient attention
+
+# Platform-specific GPU support
+# ------------------------------
+# For CUDA 11.8:
+# torch>=2.0.0+cu118 -f https://download.pytorch.org/whl/torch_stable.html
+
+# For CUDA 12.1:
+# torch>=2.0.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+
+# For CPU-only:
+# torch>=2.0.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
+
+# ===================================================================
+# Installation Instructions:
+# 1. pip install -r requirements.txt
+# 2. For GPU support, install appropriate PyTorch version
+# 3. For local LLM: Ensure 8GB+ RAM and preferably CUDA GPU
+# ===================================================================

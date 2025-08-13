@@ -1,0 +1,169 @@
+# ===================================================================
+# Rails Upgrade Agent - Git Ignore Configuration
+# ===================================================================
+
+# Environment Variables
+# ----------------------
+.env
+.env.local
+.env.production
+.env.development
+
+# Python
+# -------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+# --------------------
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE & Editors
+# -------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# AI/ML Models & Cache
+# --------------------
+models/
+.cache/
+*.ckpt
+*.bin
+*.safetensors
+.transformers_cache/
+.huggingface/
+
+# Data & Indexes (keep structure, ignore large files)
+# ---------------------------------------------------
+data/docs/*
+!data/docs/.gitkeep
+data/*.index
+data/*.jsonl
+*.faiss
+
+# Temporary Files
+# ---------------
+tmp/
+temp/
+.tmp/
+*.tmp
+*.log
+.logs/
+
+# Output Files
+# ------------
+output/
+results/
+reports/
+*.patch
+generated_*.json
+
+# Testing
+# -------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jupyter Notebooks
+# ------------------
+.ipynb_checkpoints/
+*.ipynb
+
+# macOS
+# -----
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+# -------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+# -----
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Git
+# ---
+*.orig
+
+# Project Specific
+# ----------------
+# Keep sample files but ignore user-generated content
+examples/user_*
+examples/generated_*
+examples/my_*
+
+# Rails specific (if analyzing Rails projects)
+# --------------------------------------------
+sample_rails_upgrade/Gemfile.lock
+sample_rails_upgrade/tmp/
+sample_rails_upgrade/log/
+sample_rails_upgrade/.byebug_history
+
+# Backup files
+# ------------
+*.backup
+*.bak
+*~
+
+# Archives
+# --------
+*.zip
+*.tar.gz
+*.rar
+
+# ===================================================================
+# Keep these files/directories:
+# - data/docs/.gitkeep (to maintain directory structure)
+# - examples/*.md (documentation examples)  
+# - src/ (all source code)
+# - tests/ (all test files)
+# - docs/ (documentation)
+# - requirements.txt (dependencies)
+# - .env.example (template)
+# ===================================================================

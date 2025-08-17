@@ -38,7 +38,7 @@ jobs:
     
     - name: Run basic tests
       run: |
-        python -c "import src.model.gemini_llm; print('✅ Gemini LLM import successful')"
+        python -c "import src.model.local_llm; print('✅ Local LLM import successful')"
         python -c "import src.retriever.retriever; print('✅ Retriever import successful')"
         python -c "from rails_upgrade_suggestions import RailsUpgradeSuggestionGenerator; print('✅ Main module import successful')"
     
@@ -54,8 +54,6 @@ jobs:
     - name: Test system integrity
       run: |
         python test_complete_system.py
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       continue-on-error: true
 
   security:

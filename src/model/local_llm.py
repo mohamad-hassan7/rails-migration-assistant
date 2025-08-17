@@ -148,10 +148,10 @@ class LocalLLM:
         generation_params = {
             "max_new_tokens": max_new_tokens,
             "do_sample": True,
-            "temperature": temperature,
-            "top_p": 0.95,
-            "top_k": 50,
-            "repetition_penalty": 1.1,
+            "temperature": min(temperature, 0.7),  # Cap temperature to reduce hallucinations
+            "top_p": 0.9,  # More focused sampling
+            "top_k": 40,   # Reduced for better quality
+            "repetition_penalty": 1.2,  # Higher penalty for repetition
             "pad_token_id": self.tokenizer.pad_token_id,
             "eos_token_id": self.tokenizer.eos_token_id,
             **kwargs

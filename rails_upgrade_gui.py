@@ -25,8 +25,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 try:
     from src.retriever.retriever import Retriever
-    from src.model.gemini_llm import GeminiLLM
     from src.model.local_llm import LocalLLM
+    from src.analyzer.project_scanner import RailsProjectScanner
 except ImportError as e:
     print(f"Import error: {e}")
     print("Please ensure all required modules are available")
@@ -42,9 +42,10 @@ class RailsUpgradeGUI:
         index_path = "data/faiss_combined.index"
         meta_path = "data/meta_combined.jsonl"
         self.retriever = Retriever(index_path, meta_path)
+        self.scanner = RailsProjectScanner()
         
-        # LLM selection (start with Gemini, can switch to local)
-        self.use_local_llm = False
+        # LLM selection (local LLM only)
+        self.use_local_llm = True
         self.llm = None
         self.local_llm = None
         self._initialize_llm()
@@ -52,32 +53,22 @@ class RailsUpgradeGUI:
         # Track suggestions and their status
         self.suggestions = []
         self.current_suggestion_index = 0
+        self.project_analysis = None
+        
+        # Mode selection
+        self.current_mode = "query"  # "query" or "project"
         
         self.create_widgets()
     
     def _initialize_llm(self):
-        """Initialize the LLM based on user preference."""
+        """Initialize the Local LLM."""
         try:
-            if not self.use_local_llm:
-                self.llm = GeminiLLM()
-            else:
-                if self.local_llm is None:
-                    self.local_llm = LocalLLM(use_4bit=True)
-                self.llm = self.local_llm
+            if self.local_llm is None:
+                self.local_llm = LocalLLM(use_4bit=True)
+            self.llm = self.local_llm
         except Exception as e:
-            messagebox.showerror("LLM Error", f"Failed to initialize LLM: {str(e)}")
-            # Fallback to the other option
-            self.use_local_llm = not self.use_local_llm
-            try:
-                if not self.use_local_llm:
-                    self.llm = GeminiLLM()
-                else:
-                    if self.local_llm is None:
-                        self.local_llm = LocalLLM(use_4bit=True)
-                    self.llm = self.local_llm
-            except Exception as e2:
-                messagebox.showerror("Critical Error", f"Failed to initialize any LLM: {str(e2)}")
-                self.llm = None
+            messagebox.showerror("LLM Error", f"Failed to initialize Local LLM: {str(e)}")
+            self.llm = None
         
     def create_widgets(self):
         """Create the GUI layout."""
@@ -89,63 +80,101 @@ class RailsUpgradeGUI:
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
-        main_frame.columnconfigure(1, weight=1)
+        main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(2, weight=1)
         
         # Title and LLM selection
         header_frame = ttk.Frame(main_frame)
-        header_frame.grid(row=0, column=0, columnspan=3, pady=(0, 10))
+        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
         header_frame.columnconfigure(0, weight=1)
         
         title_label = ttk.Label(header_frame, text="🚀 Rails Upgrade Assistant", 
-                               font=("Arial", 16, "bold"))
+                               font=("Arial", 18, "bold"))
         title_label.grid(row=0, column=0, sticky=tk.W)
         
-        # LLM selection frame
+        # LLM selection frame - Local LLM only
         llm_frame = ttk.Frame(header_frame)
         llm_frame.grid(row=0, column=1, sticky=tk.E)
         
         ttk.Label(llm_frame, text="AI Model:").pack(side=tk.LEFT, padx=(0, 5))
         
-        self.llm_var = tk.StringVar(value="Gemini API" if not self.use_local_llm else "Local LLM")
-        llm_combo = ttk.Combobox(llm_frame, textvariable=self.llm_var, 
-                                values=["Gemini API", "Local LLM"], state="readonly", width=12)
-        llm_combo.pack(side=tk.LEFT, padx=(0, 5))
-        llm_combo.bind("<<ComboboxSelected>>", self.on_llm_change)
+        self.llm_var = tk.StringVar(value="Local LLM")
+        llm_label = ttk.Label(llm_frame, textvariable=self.llm_var, font=("Arial", 10, "bold"))
+        llm_label.pack(side=tk.LEFT, padx=(0, 5))
         
         # LLM status indicator
         self.llm_status_var = tk.StringVar(value="🟢 Ready" if self.llm else "🔴 Error")
         ttk.Label(llm_frame, textvariable=self.llm_status_var, font=("Arial", 9)).pack(side=tk.LEFT)
         
-        # Query input section
-        query_frame = ttk.LabelFrame(main_frame, text="Search Query", padding="5")
-        query_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
-        query_frame.columnconfigure(0, weight=1)
+        # Mode selection section - Make this the main choice
+        self.create_mode_selection(main_frame)
         
-        self.query_var = tk.StringVar()
-        query_entry = ttk.Entry(query_frame, textvariable=self.query_var, font=("Arial", 11))
-        query_entry.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=(0, 5))
-        
-        # Enhanced search button with model info
-        search_btn = ttk.Button(query_frame, text="🔍 Generate AI Suggestions", 
-                               command=self.search_and_generate)
-        search_btn.grid(row=0, column=1)
-        
-        # Main content area with notebook for tabs
-        self.notebook = ttk.Notebook(main_frame)
-        self.notebook.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S))
-        
-        # Tab 1: Code Review
-        self.create_review_tab()
-        
-        # Tab 2: Report
-        self.create_report_tab()
+        # Content area (will be populated based on mode selection)
+        self.content_frame = ttk.Frame(main_frame)
+        self.content_frame.grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.content_frame.columnconfigure(0, weight=1)
+        self.content_frame.rowconfigure(0, weight=1)
         
         # Status bar
-        self.status_var = tk.StringVar(value="Ready - Enter a search query to get started")
+        self.status_var = tk.StringVar(value="Choose a mode above to get started")
         status_bar = ttk.Label(main_frame, textvariable=self.status_var, 
                               relief=tk.SUNKEN, anchor=tk.W)
-        status_bar.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 0))
+        status_bar.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
+        
+        # Initially show mode selection
+        self.show_mode_selection()
+        
+    def create_mode_selection(self, parent):
+        """Create the mode selection interface."""
+        # Mode selection section
+        mode_frame = ttk.LabelFrame(parent, text="Choose Your Mode", padding="20")
+        mode_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
+        mode_frame.columnconfigure(0, weight=1)
+        mode_frame.columnconfigure(1, weight=1)
+        
+        # Mode selection variable
+        self.mode_var = tk.StringVar(value="")
+        
+        # Query Mode Card
+        query_card = ttk.Frame(mode_frame, relief="raised", borderwidth=2, padding="15")
+        query_card.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(0, 10))
+        
+        query_title = ttk.Label(query_card, text="💬 Query Mode", font=("Arial", 14, "bold"))
+        query_title.pack(anchor=tk.W)
+        
+        query_desc = ttk.Label(query_card, text=
+                              "• Ask questions like 'Rails 7 upgrade deprecations'\n"
+                              "• Get instant AI answers with documentation references\n"
+                              "• Perfect for quick Rails upgrade guidance\n"
+                              "• Example queries provided for common scenarios",
+                              font=("Arial", 10), foreground="gray", justify=tk.LEFT)
+        query_desc.pack(anchor=tk.W, pady=(10, 15))
+        
+        query_btn = ttk.Button(query_card, text="Start Query Mode", 
+                              command=lambda: self.select_mode("query"),
+                              style="Accent.TButton")
+        query_btn.pack(anchor=tk.W)
+        
+        # Project Mode Card  
+        project_card = ttk.Frame(mode_frame, relief="raised", borderwidth=2, padding="15")
+        project_card.grid(row=0, column=1, sticky=(tk.W, tk.E, tk.N, tk.S), padx=(10, 0))
+        
+        project_title = ttk.Label(project_card, text="📁 Project Mode", font=("Arial", 14, "bold"))
+        project_title.pack(anchor=tk.W)
+        
+        project_desc = ttk.Label(project_card, text=
+                                "• Browse and select your Rails project directory\n"
+                                "• Get comprehensive upgrade suggestions\n"
+                                "• Review code changes side-by-side\n"
+                                "• Apply changes with automatic backups\n"
+                                "• Track all modifications and generate reports",
+                                font=("Arial", 10), foreground="gray", justify=tk.LEFT)
+        project_desc.pack(anchor=tk.W, pady=(10, 15))
+        
+        project_btn = ttk.Button(project_card, text="Start Project Mode", 
+                                command=lambda: self.select_mode("project"),
+                                style="Accent.TButton")
+        project_btn.pack(anchor=tk.W)
         
     def create_review_tab(self):
         """Create the code review tab."""
@@ -221,6 +250,411 @@ class RailsUpgradeGUI:
         ttk.Button(action_frame, text="❌ Reject", command=self.reject_suggestion).pack(side=tk.LEFT, padx=(0, 5))
         ttk.Button(action_frame, text="⏭️ Skip", command=self.skip_suggestion).pack(side=tk.LEFT)
         
+    def create_analysis_tab(self):
+        """Create the project analysis tab."""
+        analysis_frame = ttk.Frame(self.notebook)
+        self.notebook.add(analysis_frame, text="📊 Project Analysis")
+        
+        # Configure grid
+        analysis_frame.columnconfigure(0, weight=1)
+        analysis_frame.rowconfigure(1, weight=1)
+        
+        # Analysis summary
+        summary_frame = ttk.LabelFrame(analysis_frame, text="Project Summary", padding="5")
+        summary_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        summary_frame.columnconfigure(1, weight=1)
+        
+        # Project info labels
+        ttk.Label(summary_frame, text="Project Path:").grid(row=0, column=0, sticky=tk.W)
+        self.project_path_label = ttk.Label(summary_frame, text="No project scanned", foreground="gray")
+        self.project_path_label.grid(row=0, column=1, sticky=tk.W, padx=(5, 0))
+        
+        ttk.Label(summary_frame, text="Rails Version:").grid(row=1, column=0, sticky=tk.W)
+        self.rails_version_label = ttk.Label(summary_frame, text="Unknown", foreground="gray")
+        self.rails_version_label.grid(row=1, column=1, sticky=tk.W, padx=(5, 0))
+        
+        ttk.Label(summary_frame, text="Issues Found:").grid(row=2, column=0, sticky=tk.W)
+        self.issues_count_label = ttk.Label(summary_frame, text="0", foreground="gray")
+        self.issues_count_label.grid(row=2, column=1, sticky=tk.W, padx=(5, 0))
+        
+        # Upgrade priorities
+        priorities_frame = ttk.LabelFrame(analysis_frame, text="Upgrade Priorities", padding="5")
+        priorities_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        priorities_frame.columnconfigure(0, weight=1)
+        priorities_frame.rowconfigure(0, weight=1)
+        
+        self.priorities_text = scrolledtext.ScrolledText(priorities_frame, wrap=tk.WORD, 
+                                                        font=("Arial", 10), height=15)
+        self.priorities_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+            
+    def show_mode_selection(self):
+        """Show the initial mode selection screen."""
+        self.current_mode = None
+        
+        # Clear content frame
+        for widget in self.content_frame.winfo_children():
+            widget.destroy()
+            
+        # Show welcome message
+        welcome_frame = ttk.Frame(self.content_frame)
+        welcome_frame.pack(expand=True, fill=tk.BOTH)
+        
+        welcome_label = ttk.Label(welcome_frame, 
+                                 text="Welcome! Please choose a mode above to get started.",
+                                 font=("Arial", 12), foreground="gray")
+        welcome_label.pack(expand=True)
+        
+        self.status_var.set("Choose a mode above to get started")
+        
+    def select_mode(self, mode):
+        """Handle mode selection and switch to the appropriate interface."""
+        self.current_mode = mode
+        
+        if mode == "query":
+            self.create_query_interface()
+        elif mode == "project":
+            self.create_project_interface()
+            
+    def create_query_interface(self):
+        """Create the query mode interface."""
+        # Clear content frame
+        for widget in self.content_frame.winfo_children():
+            widget.destroy()
+            
+        # Query input section
+        input_frame = ttk.LabelFrame(self.content_frame, text="💬 Query Mode - Ask Your Rails Question", padding="10")
+        input_frame.pack(fill=tk.X, pady=(0, 10))
+        input_frame.columnconfigure(1, weight=1)
+        
+        # Query input
+        ttk.Label(input_frame, text="Ask your Rails question:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky=tk.W, padx=(0, 10))
+        
+        self.query_var = tk.StringVar()
+        query_entry = ttk.Entry(input_frame, textvariable=self.query_var, font=("Arial", 11))
+        query_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10))
+        
+        ask_btn = ttk.Button(input_frame, text="💬 Ask AI", command=self.ask_query,
+                            style="Accent.TButton")
+        ask_btn.grid(row=0, column=2)
+        
+        # Example queries
+        examples_frame = ttk.Frame(input_frame)
+        examples_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 0))
+        
+        ttk.Label(examples_frame, text="💡 Example questions:", font=("Arial", 9)).pack(anchor=tk.W)
+        
+        examples = [
+            "Rails 7 upgrade deprecations",
+            "ActionCable WebSocket Rails 6 to 7", 
+            "Strong parameters best practices",
+            "Rails security vulnerabilities",
+            "Performance improvements Rails 6"
+        ]
+        
+        examples_container = ttk.Frame(examples_frame)
+        examples_container.pack(fill=tk.X, padx=(10, 0))
+        
+        for i, example in enumerate(examples):
+            example_btn = ttk.Button(examples_container, text=f"• {example}", 
+                                   command=lambda e=example: self.set_example_query(e))
+            example_btn.grid(row=i//2, column=i%2, sticky=tk.W, padx=(0, 20), pady=2)
+            
+        # Response area
+        response_frame = ttk.LabelFrame(self.content_frame, text="💬 AI Response", padding="10")
+        response_frame.pack(fill=tk.BOTH, expand=True)
+        response_frame.columnconfigure(0, weight=1)
+        response_frame.rowconfigure(1, weight=1)
+        
+        # Response header
+        header_frame = ttk.Frame(response_frame)
+        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        self.response_title = ttk.Label(header_frame, text="Ask a question to get AI guidance", 
+                                       font=("Arial", 12, "bold"))
+        self.response_title.pack(side=tk.LEFT)
+        
+        ttk.Button(header_frame, text="🔄 Clear", command=self.clear_response).pack(side=tk.RIGHT)
+        
+        # Response display
+        self.response_text = scrolledtext.ScrolledText(response_frame, wrap=tk.WORD, font=("Arial", 10))
+        self.response_text.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        
+        # Insert welcome message
+        welcome_msg = """🚀 Welcome to Query Mode!
+
+Ask any Rails upgrade question and get instant AI-powered answers with documentation references.
+
+💡 Try asking about:
+• Specific Rails version upgrades
+• Deprecated methods and their replacements  
+• Security best practices
+• Performance optimization tips
+• Migration strategies
+
+Example: "How do I upgrade from Rails 6 to Rails 7?"
+"""
+        self.response_text.insert(1.0, welcome_msg)
+        
+        # Back button
+        back_btn = ttk.Button(response_frame, text="⬅️ Back to Mode Selection", 
+                             command=self.show_mode_selection)
+        back_btn.grid(row=2, column=0, pady=(10, 0), sticky=tk.W)
+        
+        self.status_var.set("💬 Query Mode - Ask any Rails upgrade question")
+        
+    def create_project_interface(self):
+        """Create the project mode interface."""
+        # Clear content frame
+        for widget in self.content_frame.winfo_children():
+            widget.destroy()
+            
+        # Project input section
+        input_frame = ttk.LabelFrame(self.content_frame, text="📁 Project Mode - Scan Your Rails Project", padding="10")
+        input_frame.pack(fill=tk.X, pady=(0, 10))
+        input_frame.columnconfigure(1, weight=1)
+        
+        # Project selection
+        ttk.Label(input_frame, text="Rails Project:", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky=tk.W, padx=(0, 10))
+        
+        self.project_path_var = tk.StringVar()
+        project_entry = ttk.Entry(input_frame, textvariable=self.project_path_var, font=("Arial", 11))
+        project_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 10))
+        
+        ttk.Button(input_frame, text="📁 Browse", command=self.browse_project).grid(row=0, column=2, padx=(0, 5))
+        ttk.Button(input_frame, text="🔍 Scan Project", command=self.scan_project, 
+                  style="Accent.TButton").grid(row=0, column=3)
+        
+        # Quick actions
+        actions_frame = ttk.Frame(input_frame)
+        actions_frame.grid(row=1, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=(10, 0))
+        
+        ttk.Label(actions_frame, text="🚀 Quick actions:", font=("Arial", 9)).pack(anchor=tk.W)
+        
+        actions_container = ttk.Frame(actions_frame)
+        actions_container.pack(fill=tk.X, padx=(10, 0))
+        
+        ttk.Button(actions_container, text="📋 Use Sample Project", 
+                  command=self.use_sample_project).pack(side=tk.LEFT, padx=(0, 10))
+        ttk.Button(actions_container, text="📄 View Last Report", 
+                  command=self.view_last_report).pack(side=tk.LEFT)
+        
+        # Tabbed content area
+        self.notebook = ttk.Notebook(self.content_frame)
+        self.notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        # Create project mode tabs
+        self.create_review_tab()
+        self.create_analysis_tab() 
+        self.create_report_tab()
+        
+        # Back button
+        back_btn = ttk.Button(self.content_frame, text="⬅️ Back to Mode Selection", 
+                             command=self.show_mode_selection)
+        back_btn.pack(pady=(10, 0), anchor=tk.W)
+        
+        self.status_var.set("📁 Project Mode - Browse and select your Rails project to scan")
+        
+    def set_example_query(self, query):
+        """Set an example query in the input field."""
+        self.query_var.set(query)
+        
+    def ask_query(self):
+        """Handle query mode AI requests."""
+        query = self.query_var.get().strip()
+        if not query:
+            messagebox.showwarning("Warning", "Please enter a question")
+            return
+            
+        self.status_var.set("🤖 Getting AI response...")
+        self.root.update()
+        
+        try:
+            # Search for relevant content
+            results = self.retriever.search(query, top_k=5)
+            
+            # Debug: Check if we're getting good results
+            print(f"🔍 Search results for '{query}':")
+            print(f"   Found {len(results)} results")
+            for i, result in enumerate(results[:2]):
+                text = result.get('text', '')
+                meta = result.get('meta', {})
+                source = meta.get('source', 'Unknown')
+                print(f"   {i+1}. Source: {source}")
+                print(f"      Text preview: {text[:100]}...")
+            
+            # Generate AI response
+            context_parts = []
+            for result in results:
+                text = result.get('text', '')
+                meta = result.get('meta', {})
+                source = meta.get('source', 'Unknown')
+                if text.strip():  # Only add non-empty text
+                    context_parts.append(f"[Source: {source}]:\n{text}\n")
+                
+            context = "\n".join(context_parts)
+            
+            # If no good context, provide fallback Rails 7 information
+            if len(context.strip()) < 100:
+                context = self._get_rails7_fallback_context()
+                print("📝 Using fallback Rails 7 context")
+            
+            # Create a more conversational prompt for query mode
+            prompt = f"""You are a Rails upgrade expert. Answer this specific question about Rails upgrades.
+
+Question: {query}
+
+Rails Documentation Context:
+{context}
+
+Based on the context above, provide a clear, helpful answer about Rails upgrades. Focus on:
+- Specific deprecations and changes
+- Code examples showing before/after
+- Practical upgrade steps
+- Version-specific considerations
+
+If the question is about Rails 7 specifically, cover the major changes like Zeitwerk, Hotwire, asset pipeline changes, and deprecated features.
+
+Answer:"""
+
+            response = self.llm.generate(prompt, max_new_tokens=800, temperature=0.3)
+            
+            # Clean the response - stop at common hallucination patterns
+            cleaned_response = self._clean_llm_response(response)
+            
+            # Display the response
+            self.response_title.config(text=f"💬 Response to: {query}")
+            self.response_text.delete(1.0, tk.END)
+            
+            formatted_response = f"""❓ Question: {query}
+
+🤖 AI Response:
+Answer: 
+{cleaned_response}
+
+📚 Sources consulted:
+"""
+            
+            for i, result in enumerate(results[:3], 1):
+                meta = result.get('meta', {})
+                source = meta.get('source', 'Unknown')
+                formatted_response += f"{i}. {source}\n"
+                
+            self.response_text.insert(1.0, formatted_response)
+            self.status_var.set("✅ AI response generated")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to get AI response: {str(e)}")
+            self.status_var.set("❌ Error getting response")
+    
+    def _clean_llm_response(self, response):
+        """Clean LLM response to remove hallucinations and unrelated content."""
+        if not response:
+            return "No response generated."
+        
+        # Common patterns that indicate the model started hallucinating
+        stop_patterns = [
+            "---\nlayout:",
+            "layout: post",
+            "title:",
+            "date:",
+            "categories:",
+            "author:",
+            "Building a CLI",
+            "import argparse",
+            "pip install",
+            "```bash\npip install",
+            "Let's take a look at",
+            "For example, let's imagine",
+            "Firstly, install",
+            "Then you can proceed"
+        ]
+        
+        # Split response into lines for processing
+        lines = response.split('\n')
+        cleaned_lines = []
+        
+        for line in lines:
+            # Check if this line contains any stop pattern
+            should_stop = False
+            for pattern in stop_patterns:
+                if pattern.lower() in line.lower():
+                    should_stop = True
+                    break
+            
+            if should_stop:
+                break
+                
+            cleaned_lines.append(line)
+        
+        # Join back and do final cleanup
+        cleaned = '\n'.join(cleaned_lines).strip()
+        
+        # Remove trailing incomplete sentences or code blocks
+        if cleaned.endswith('```'):
+            cleaned = cleaned[:-3].strip()
+        
+        # If response is too short, return original
+        if len(cleaned) < 50:
+            return response
+            
+        return cleaned
+    
+    def _get_rails7_fallback_context(self):
+        """Provide fallback Rails 7 context when search results are insufficient."""
+        return """
+[Source: Rails 7.0 Release Notes]:
+Rails 7 introduces several significant changes and deprecations:
+
+1. **Zeitwerk becomes the default autoloader** - Classic autoloader is deprecated
+2. **Sprockets is no longer the default** - Rails 7 uses importmap-rails by default
+3. **ActionText and ActionMailbox** - Now included by default
+4. **Hotwire integration** - Turbo and Stimulus are default
+5. **Active Storage variants** - New preprocessed variants API
+
+Major Deprecations in Rails 7:
+- `config.autoloader = :classic` is deprecated
+- `Rails.application.config.force_ssl` behavior changes
+- Several ActionView helpers deprecated
+- Legacy connection handling in ActionCable
+- Sass-rails gem no longer included by default
+
+Breaking Changes:
+- Ruby 2.7.0+ required (Ruby 3.0+ recommended)  
+- Node.js 12+ required for asset pipeline
+- PostgreSQL 10+, MySQL 5.7+, SQLite 3.16+ required
+- Some gem dependencies updated with breaking changes
+
+Upgrade Path:
+1. Update Ruby to 2.7+ (preferably 3.0+)
+2. Run `rails app:update` 
+3. Address Zeitwerk compatibility
+4. Update asset pipeline configuration
+5. Test thoroughly with new defaults
+"""
+            
+    def clear_response(self):
+        """Clear the query response."""
+        self.response_text.delete(1.0, tk.END)
+        self.response_title.config(text="Ask a question to get AI guidance")
+        self.query_var.set("")
+        
+    def use_sample_project(self):
+        """Use the included sample project."""
+        sample_path = os.path.join(os.path.dirname(__file__), "sample_rails_upgrade")
+        if os.path.exists(sample_path):
+            self.project_path_var.set(sample_path)
+            self.status_var.set("📋 Sample project loaded - click 'Scan Project' to analyze")
+        else:
+            messagebox.showwarning("Warning", "Sample project not found")
+            
+    def view_last_report(self):
+        """View the last generated report."""
+        if self.suggestions:
+            self.notebook.select(2)  # Switch to report tab
+            self.update_report()
+        else:
+            messagebox.showinfo("Info", "No reports available - scan a project first")
+        
     def create_report_tab(self):
         """Create the report tab."""
         report_frame = ttk.Frame(self.notebook)
@@ -281,55 +715,6 @@ class RailsUpgradeGUI:
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {str(e)}")
             self.status_var.set("❌ Error occurred")
-    
-    def on_llm_change(self, event=None):
-        """Handle LLM model change."""
-        selected_llm = self.llm_var.get()
-        
-        if selected_llm == "Local LLM" and not self.use_local_llm:
-            self.status_var.set("🔄 Switching to Local LLM...")
-            self.root.update()
-            
-            try:
-                self.use_local_llm = True
-                self._initialize_llm()
-                self.llm_status_var.set("🟢 Local Ready")
-                self.status_var.set("✅ Switched to Local LLM")
-                
-                # Show model info
-                if hasattr(self.llm, 'get_model_info'):
-                    info = self.llm.get_model_info()
-                    messagebox.showinfo("Local LLM", 
-                                       f"Model: {info['name'].split('/')[-1]}\n"
-                                       f"Quantization: {info['quantization']}\n"
-                                       f"Device: {info['device']}\n\n"
-                                       f"✅ Ready for secure, offline processing!")
-                
-            except Exception as e:
-                self.use_local_llm = False
-                self.llm_var.set("Gemini API")
-                self.llm_status_var.set("🔴 Local Failed")
-                messagebox.showerror("Local LLM Error", 
-                                   f"Failed to load local model: {str(e)}\n\n"
-                                   f"Falling back to Gemini API.")
-                
-        elif selected_llm == "Gemini API" and self.use_local_llm:
-            self.status_var.set("🔄 Switching to Gemini API...")
-            self.root.update()
-            
-            try:
-                self.use_local_llm = False
-                self._initialize_llm()
-                self.llm_status_var.set("🟢 API Ready")
-                self.status_var.set("✅ Switched to Gemini API")
-                
-            except Exception as e:
-                self.use_local_llm = True
-                self.llm_var.set("Local LLM")
-                self.llm_status_var.set("🔴 API Failed")
-                messagebox.showerror("Gemini API Error", 
-                                   f"Failed to initialize Gemini API: {str(e)}\n\n"
-                                   f"Please check your API key.")
             
     def generate_suggestions(self, query, results):
         """Generate upgrade suggestions based on search results."""
@@ -362,7 +747,7 @@ class RailsUpgradeGUI:
                     suggestions = [suggestion]
                     
             else:
-                # Use Gemini API with JSON prompt
+                # Use Local LLM with JSON prompt
                 prompt = f"""
 Based on the Rails upgrade context below, generate specific code upgrade suggestions for: "{query}"
 
@@ -405,7 +790,7 @@ Maximum 3 suggestions per query.
                                 suggestion['status'] = 'pending'
                                 suggestion['timestamp'] = datetime.now().isoformat()
                                 suggestion['query'] = query
-                                suggestion['generated_by'] = 'gemini_api'
+                                suggestion['generated_by'] = 'local_llm'
                                 
                             suggestions = data['suggestions']
                             
@@ -535,6 +920,146 @@ Maximum 3 suggestions per query.
         # Display report
         self.report_text.delete(1.0, tk.END)
         self.report_text.insert(1.0, "\n".join(report_lines))
+        
+    def browse_project(self):
+        """Browse for a Rails project directory."""
+        project_dir = filedialog.askdirectory(
+            title="Select Rails Project Directory"
+        )
+        
+        if project_dir:
+            self.project_path_var.set(project_dir)
+            
+    def scan_project(self):
+        """Scan the selected Rails project."""
+        project_path = self.project_path_var.get().strip()
+        
+        if not project_path:
+            messagebox.showwarning("Warning", "Please select a Rails project directory")
+            return
+            
+        if not os.path.exists(project_path):
+            messagebox.showerror("Error", f"Directory does not exist: {project_path}")
+            return
+            
+        self.status_var.set("🔍 Scanning Rails project...")
+        self.root.update()
+        
+        try:
+            # Scan the project
+            self.project_analysis = self.scanner.scan_project(project_path)
+            
+            if not self.project_analysis['is_rails_project']:
+                messagebox.showwarning("Warning", 
+                                     "The selected directory does not appear to be a Rails project.\n"
+                                     "Make sure it contains a Gemfile with Rails dependency.")
+                return
+                
+            # Update UI with analysis results
+            self.update_analysis_display()
+            
+            # Generate suggestions from the analysis
+            if self.project_analysis['suggestions']:
+                self.suggestions = self.project_analysis['suggestions']
+                self.current_suggestion_index = 0
+                self.display_current_suggestion()
+                self.update_report()
+                
+                # Switch to Code Review tab
+                self.notebook.select(0)
+                
+                self.status_var.set(f"✅ Scanned project: {len(self.suggestions)} suggestions generated")
+            else:
+                self.status_var.set("✅ Project scanned: No issues found")
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to scan project: {str(e)}")
+            self.status_var.set("❌ Project scan failed")
+            
+    def update_analysis_display(self):
+        """Update the project analysis tab with scan results."""
+        if not self.project_analysis:
+            return
+            
+        # Update project info
+        self.project_path_label.config(text=self.project_analysis['project_path'], foreground="black")
+        
+        rails_version = self.project_analysis.get('rails_version', 'Unknown')
+        self.rails_version_label.config(text=rails_version, foreground="black")
+        
+        total_issues = self.project_analysis.get('summary', {}).get('total_issues', 0)
+        self.issues_count_label.config(text=str(total_issues), foreground="black")
+        
+        # Update priorities display
+        self.priorities_text.delete(1.0, tk.END)
+        
+        # Get upgrade priorities
+        priorities = self.scanner.get_upgrade_priority(self.project_analysis)
+        
+        analysis_content = []
+        analysis_content.append("=" * 60)
+        analysis_content.append("RAILS PROJECT ANALYSIS REPORT")
+        analysis_content.append("=" * 60)
+        analysis_content.append("")
+        
+        # Project overview
+        analysis_content.append("📋 PROJECT OVERVIEW:")
+        analysis_content.append(f"   Path: {self.project_analysis['project_path']}")
+        analysis_content.append(f"   Rails Version: {rails_version}")
+        analysis_content.append(f"   Total Issues: {total_issues}")
+        analysis_content.append("")
+        
+        # Upgrade priorities
+        analysis_content.append("🎯 UPGRADE PRIORITIES:")
+        for i, priority in enumerate(priorities, 1):
+            analysis_content.append(f"   {i}. {priority}")
+        if not priorities:
+            analysis_content.append("   ✅ No critical issues found")
+        analysis_content.append("")
+        
+        # Issue breakdown
+        summary = self.project_analysis.get('summary', {})
+        if summary.get('by_severity'):
+            analysis_content.append("📊 ISSUES BY SEVERITY:")
+            for severity, count in summary['by_severity'].items():
+                severity_icon = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(severity, '⚪')
+                analysis_content.append(f"   {severity_icon} {severity.title()}: {count}")
+            analysis_content.append("")
+            
+        if summary.get('by_category'):
+            analysis_content.append("🏷️ ISSUES BY CATEGORY:")
+            for category, count in summary['by_category'].items():
+                category_name = category.replace('_', ' ').title().replace('Rails ', 'Rails ')
+                analysis_content.append(f"   • {category_name}: {count}")
+            analysis_content.append("")
+        
+        # Detailed suggestions
+        suggestions = self.project_analysis.get('suggestions', [])
+        if suggestions:
+            analysis_content.append("📝 DETAILED SUGGESTIONS:")
+            analysis_content.append("-" * 40)
+            
+            for i, suggestion in enumerate(suggestions[:10], 1):  # Show first 10
+                file_path = suggestion.get('file_path', 'Unknown')
+                # Show relative path for readability
+                if self.project_analysis['project_path'] in file_path:
+                    file_path = file_path.replace(self.project_analysis['project_path'], '').lstrip('\\/')
+                    
+                severity = suggestion.get('severity', 'medium')
+                severity_icon = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(severity, '⚪')
+                
+                analysis_content.append(f"\n{i}. {severity_icon} {file_path}")
+                analysis_content.append(f"   Line {suggestion.get('line_number', '?')}: {suggestion.get('explanation', 'No explanation')}")
+                analysis_content.append(f"   Confidence: {suggestion.get('confidence', 'unknown').title()}")
+                
+            if len(suggestions) > 10:
+                analysis_content.append(f"\n... and {len(suggestions) - 10} more suggestions")
+                analysis_content.append("Switch to Code Review tab to see all suggestions")
+            
+        self.priorities_text.insert(1.0, "\n".join(analysis_content))
+        
+        # Switch to analysis tab
+        self.notebook.select(1)
         
     def export_report(self):
         """Export the report to a file."""

@@ -1,0 +1,33 @@
+{
+  "old_version": "4.1.16",
+  "new_version": "4.2.11",
+  "diffs": [
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'rails', '4.1.16'"
+      ],
+      "after_code": [
+        "gem 'rails', '4.2.11'"
+      ]
+    },
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "# config.active_record.raise_in_transactional_callbacks = true"
+      ],
+      "after_code": [
+        "config.active_record.raise_in_transactional_callbacks = true"
+      ]
+    },
+    {
+      "file_path": "app/controllers/application_controller.rb",
+      "before_code": [
+        "protect_from_forgery"
+      ],
+      "after_code": [
+        "protect_from_forgery with: :exception"
+      ]
+    }
+  ]
+}

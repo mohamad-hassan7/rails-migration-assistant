@@ -1,0 +1,45 @@
+{
+  "old_version": "5.0.0",
+  "new_version": "5.1.7",
+  "diffs": [
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'rails', '5.0.0'"
+      ],
+      "after_code": [
+        "gem 'rails', '5.1.7'"
+      ]
+    },
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "config.load_defaults 5.0"
+      ],
+      "after_code": [
+        "config.load_defaults 5.1"
+      ]
+    },
+    {
+      "file_path": "config/secrets.yml",
+      "before_code": [
+        "development:",
+        "  secret_key_base: <%= Rails.application.secret_key_base %>"
+      ],
+      "after_code": [
+        "development:",
+        "  secret_key_base: <%= Rails.application.secret_key_base %>",
+        "  # Rails 5.1+ supports encrypted credentials"
+      ]
+    },
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "# gem 'capybara', '~> 2.13'"
+      ],
+      "after_code": [
+        "gem 'capybara', '~> 2.13'"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "old_version": "6.0.0",
+  "new_version": "6.1.7",
+  "diffs": [
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'rails', '6.0.0'"
+      ],
+      "after_code": [
+        "gem 'rails', '6.1.7'"
+      ]
+    },
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "config.load_defaults 6.0"
+      ],
+      "after_code": [
+        "config.load_defaults 6.1"
+      ]
+    },
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'image_processing', '~> 1.2'"
+      ],
+      "after_code": [
+        "gem 'image_processing', '~> 1.2'",
+        "gem 'redis', '~> 4.0'"
+      ]
+    },
+    {
+      "file_path": "config/webpack/environment.js",
+      "before_code": [
+        "const { environment } = require('@rails/webpacker')"
+      ],
+      "after_code": [
+        "const { environment } = require('@rails/webpacker')",
+        "// Rails 6.1+ improvements to Webpacker"
+      ]
+    }
+  ]
+}

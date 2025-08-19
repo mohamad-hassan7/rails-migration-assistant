@@ -1,26 +1,91 @@
-# Example Rails project for testing the scanner
+# Example Rails project for testing the migration assistant
+# This Gemfile contains patterns commonly found in legacy Rails applications
+# that need migration assistance during version upgrades
 
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '3.0.0'
+ruby '2.7.0'  # Older Ruby version that needs upgrading
 
-gem 'rails', '~> 6.1.0'
-gem 'sqlite3', '~> 1.4'
-gem 'puma', '~> 5.0'
-gem 'sass-rails', '>= 6'
-gem 'webpacker', '~> 5.0'
-gem 'turbo-rails'
-gem 'stimulus-rails'
-gem 'jbuilder', '~> 2.7'
-gem 'bootsnap', '>= 1.4.4', require: false
+# Core Rails gems - demonstrates version upgrade scenarios
+gem 'rails', '~> 5.2.0'  # Legacy Rails version for migration testing
+gem 'sqlite3', '~> 1.3.6'  # Older sqlite3 version
+gem 'mysql2', '~> 0.4.10'  # Legacy database adapter
 
+# Asset pipeline gems that changed in Rails 7
+gem 'sass-rails', '~> 5.0'  # Legacy asset pipeline
+gem 'uglifier', '>= 1.3.0'  # Deprecated in favor of Terser
+gem 'coffee-rails', '~> 4.2'  # CoffeeScript support (deprecated)
+gem 'therubyracer', platforms: :ruby  # V8 JavaScript runtime (deprecated)
+
+# Authentication and authorization with legacy patterns
+gem 'devise', '~> 4.2'  # Older Devise version
+gem 'cancancan', '~> 2.0'  # Authorization gem
+gem 'omniauth', '~> 1.9'  # OAuth integration
+
+# Legacy gem versions that have security vulnerabilities
+gem 'nokogiri', '~> 1.6.0'  # Vulnerable version for testing
+gem 'loofah', '~> 2.0.0'  # HTML sanitization
+gem 'rails-html-sanitizer', '~> 1.0.1'  # Legacy sanitizer
+
+# Background job processing
+gem 'sidekiq', '~> 5.0'  # Older Sidekiq version
+gem 'redis', '~> 3.3'  # Legacy Redis client
+
+# API and serialization
+gem 'jbuilder', '~> 2.5'  # JSON templates
+gem 'active_model_serializers', '~> 0.10.0'  # API serialization
+
+# File uploads and image processing
+gem 'paperclip', '~> 6.0'  # Deprecated in favor of Active Storage
+gem 'carrierwave', '~> 1.0'  # Alternative file upload solution
+gem 'mini_magick', '~> 4.5'  # Image processing
+
+# Pagination and search
+gem 'kaminari', '~> 0.17'  # Pagination
+gem 'ransack', '~> 1.8'  # Object-based searching
+
+# Legacy gems that need replacement
+gem 'protected_attributes'  # Mass assignment protection (Rails 3 style)
+gem 'rails-observers'  # Observer pattern (removed from Rails 4)
+gem 'actionpack-page_caching'  # Page caching (extracted from Rails)
+gem 'actionpack-action_caching'  # Action caching (extracted from Rails)
+
+# Server and deployment
+gem 'puma', '~> 3.0'  # Legacy Puma version
+gem 'unicorn'  # Alternative web server
+gem 'capistrano', '~> 3.6'  # Deployment tool
+
+# Development and testing gems with legacy versions
 group :development, :test do
-  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'byebug', platform: :mri  # Debugger
+  gem 'rspec-rails', '~> 3.5'  # Testing framework
+  gem 'factory_girl_rails', '~> 4.7'  # Old name for factory_bot_rails
+  gem 'capybara', '~> 2.7'  # Integration testing
+  gem 'selenium-webdriver'  # Browser automation
+  gem 'database_cleaner', '~> 1.5'  # Test database cleanup
 end
 
 group :development do
-  gem 'web-console', '>= 4.1.0'
-  gem 'listen', '~> 3.3'
-  gem 'spring'
+  gem 'web-console', '~> 3.0'  # Legacy web console
+  gem 'listen', '~> 3.0.5'  # File watcher
+  gem 'spring'  # Application preloader
+  gem 'spring-watcher-listen', '~> 2.0.0'  # Spring file watcher
+  gem 'better_errors'  # Enhanced error pages
+  gem 'binding_of_caller'  # Advanced debugging
 end
+
+group :test do
+  gem 'shoulda-matchers', '~> 3.1'  # Testing matchers
+  gem 'timecop'  # Time travel for tests
+  gem 'webmock'  # HTTP request stubbing
+  gem 'vcr'  # Record HTTP interactions
+end
+
+group :production do
+  gem 'pg', '~> 0.18'  # PostgreSQL adapter (legacy version)
+  gem 'rails_12factor'  # Heroku Rails integration
+end
+
+# Windows-specific gems (legacy patterns)
+gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]

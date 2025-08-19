@@ -1,0 +1,50 @@
+{
+  "old_version": "5.1.7",
+  "new_version": "5.2.6",
+  "diffs": [
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'rails', '5.1.7'"
+      ],
+      "after_code": [
+        "gem 'rails', '5.2.6'"
+      ]
+    },
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "config.load_defaults 5.1"
+      ],
+      "after_code": [
+        "config.load_defaults 5.2"
+      ]
+    },
+    {
+      "file_path": "config/credentials.yml.enc",
+      "before_code": [],
+      "after_code": [
+        "# Rails 5.2+ uses encrypted credentials instead of secrets.yml"
+      ]
+    },
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "# gem 'bootsnap', '>= 1.1.0', require: false"
+      ],
+      "after_code": [
+        "gem 'bootsnap', '>= 1.1.0', require: false"
+      ]
+    },
+    {
+      "file_path": "config/boot.rb",
+      "before_code": [
+        "require 'bundler/setup'"
+      ],
+      "after_code": [
+        "require 'bundler/setup'",
+        "require 'bootsnap/setup' # Speed up boot time by caching expensive operations."
+      ]
+    }
+  ]
+}

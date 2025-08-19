@@ -1,0 +1,39 @@
+{
+  "old_version": "4.0.13",
+  "new_version": "4.1.16",
+  "diffs": [
+    {
+      "file_path": "Gemfile",
+      "before_code": [
+        "gem 'rails', '4.0.13'"
+      ],
+      "after_code": [
+        "gem 'rails', '4.1.16'"
+      ]
+    },
+    {
+      "file_path": "config/secrets.yml",
+      "before_code": [],
+      "after_code": [
+        "development:",
+        "  secret_key_base: <%= Rails.application.secret_key_base %>",
+        "",
+        "test:",
+        "  secret_key_base: <%= Rails.application.secret_key_base %>",
+        "",
+        "production:",
+        "  secret_key_base: <%= ENV['SECRET_KEY_BASE'] %>"
+      ]
+    },
+    {
+      "file_path": "config/application.rb",
+      "before_code": [
+        "config.session_store :cookie_store, key: '_app_session'"
+      ],
+      "after_code": [
+        "config.session_store :cookie_store, key: '_app_session'",
+        "config.secrets.secret_key_base = Rails.application.secret_key_base"
+      ]
+    }
+  ]
+}

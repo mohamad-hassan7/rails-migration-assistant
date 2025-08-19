@@ -9,10 +9,10 @@ description = "AI-powered Rails upgrade assistance with dual LLM support for sec
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "Mohammed Hassan", email = "mohamed.hassan2022s@gmail.com"}
+    {name = "Mohammed Hassan"}
 ]
 maintainers = [
-    {name = "Mohammed Hassan", email = "mohamed.hassan2022s@gmail.com"}
+    {name = "Mohammed Hassan"}
 ]
 keywords = [
     "rails", "ruby", "upgrade", "migration", "ai", "llm", 
@@ -69,7 +69,7 @@ performance = [
 
 [project.scripts]
 rails-migrate = "rails_upgrade_suggestions:main"
-rails-gui = "rails_upgrade_gui:main"
+rails-gui = "rails_migration_assistant:main"
 
 [project.urls]
 Homepage = "https://github.com/mohamed7456/rails-migration-assistant"

@@ -268,10 +268,10 @@ Launches the GUI application.
 **Example:**
 ```python
 # Run from command line
-python rails_upgrade_gui.py
+python rails_migration_assistant.py
 
 # Or programmatically
-from rails_upgrade_gui import main
+from rails_migration_assistant import main
 main()
 ```
 

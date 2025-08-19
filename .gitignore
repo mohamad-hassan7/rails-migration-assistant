@@ -138,12 +138,13 @@ examples/user_*
 examples/generated_*
 examples/my_*
 
-# Rails specific (if analyzing Rails projects)
-# --------------------------------------------
-sample_rails_upgrade/Gemfile.lock
-sample_rails_upgrade/tmp/
-sample_rails_upgrade/log/
-sample_rails_upgrade/.byebug_history
+# Sample Rails Applications
+# -------------------------
+sample_rails_upgrade/
+sample_app/
+test_app/
+demo_app/
+example_rails_*/
 
 # Backup files
 # ------------

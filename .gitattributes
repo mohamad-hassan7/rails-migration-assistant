@@ -1,0 +1,61 @@
+# Git attributes for Rails Migration Assistant
+
+# Text files
+*.md text
+*.txt text
+*.py text
+*.rb text
+*.js text
+*.html text
+*.css text
+*.json text
+*.jsonl text
+*.yml text
+*.yaml text
+*.toml text
+*.sh text eol=lf
+*.bat text eol=crlf
+
+# Binary files
+*.faiss binary
+*.index binary
+*.bin binary
+*.pkl binary
+*.pyc binary
+
+# Archive files
+*.zip binary
+*.tar.gz binary
+*.tgz binary
+
+# Image files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Font files
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Documentation
+*.pdf binary
+docs/* linguist-documentation
+
+# Data files
+data/ linguist-vendored
+*.jsonl linguist-generated
+
+# Sample files
+sample_rails_upgrade/* linguist-vendored
+
+# Export ignore (files not included in git archive)
+.gitignore export-ignore
+.gitattributes export-ignore
+.github/ export-ignore
+tests/ export-ignore
+docs/ export-ignore

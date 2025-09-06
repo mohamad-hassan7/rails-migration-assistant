@@ -166,13 +166,13 @@ class LocalLLM:
             "loaded_at": datetime.now().isoformat()
         }
 
-    def generate(self, prompt: str, max_new_tokens: int = 512, temperature: float = 0.7, **kwargs) -> str:
+    def generate(self, prompt: str, max_new_tokens: int = 256, temperature: float = 0.7, **kwargs) -> str:
         """
         Generate response for Rails upgrade queries.
         
         Args:
             prompt: Input prompt (preferably Rails-specific)
-            max_new_tokens: Maximum tokens to generate
+            max_new_tokens: Maximum tokens to generate (reduced for faster responses)
             temperature: Sampling temperature (0.1-1.0)
             **kwargs: Additional generation parameters
             
@@ -193,14 +193,14 @@ class LocalLLM:
         if self.device == "cuda":
             inputs = inputs.to("cuda")
 
-        # Generation parameters optimized for Rails code
+        # Generation parameters optimized for Rails code and speed
         generation_params = {
             "max_new_tokens": max_new_tokens,
             "do_sample": True,
-            "temperature": min(temperature, 0.7),  # Cap temperature to reduce hallucinations
-            "top_p": 0.9,  # More focused sampling
-            "top_k": 40,   # Reduced for better quality
-            "repetition_penalty": 1.2,  # Higher penalty for repetition
+            "temperature": min(temperature, 0.6),  # Lower temperature for faster, more focused responses
+            "top_p": 0.85,  # More focused sampling for speed
+            "top_k": 30,   # Reduced for better speed
+            "repetition_penalty": 1.15,  # Slightly reduced for speed
             "pad_token_id": self.tokenizer.pad_token_id,
             "eos_token_id": self.tokenizer.eos_token_id,
             **kwargs
@@ -229,10 +229,10 @@ class LocalLLM:
             thread = threading.Thread(target=generate_with_timeout)
             thread.daemon = True
             thread.start()
-            thread.join(timeout=10)  # 10 second timeout for faster processing
+            thread.join(timeout=300)  # 300 second timeout for complex queries
             
             if thread.is_alive():
-                print(f"   ⚠️  LLM generation timed out after 10s")
+                print(f"   ⚠️  LLM generation timed out after 60s")
                 return "NO_CHANGE_NEEDED\nEXPLANATION: Generation timed out, manual review recommended"
             
             if exception:

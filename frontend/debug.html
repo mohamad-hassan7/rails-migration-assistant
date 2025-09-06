@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rails Migration Assistant - Debug</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f0f0f0;
+      }
+      .debug-info {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      .status {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+      .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+      .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+  </head>
+  <body>
+    <div class="debug-info">
+      <h1>🚄 Rails Migration Assistant - Debug Mode</h1>
+      
+      <div class="status info">
+        <strong>Debug Information:</strong>
+        <ul>
+          <li>Electron Version: <span id="electron-version">Loading...</span></li>
+          <li>Node Version: <span id="node-version">Loading...</span></li>
+          <li>Chrome Version: <span id="chrome-version">Loading...</span></li>
+          <li>Current URL: <span id="current-url">Loading...</span></li>
+        </ul>
+      </div>
+
+      <div class="status info">
+        <strong>Backend API Status:</strong>
+        <div id="api-status">Testing connection...</div>
+      </div>
+
+      <div class="status info">
+        <strong>File System Check:</strong>
+        <div id="file-status">Checking files...</div>
+      </div>
+
+      <div class="status info">
+        <strong>React App Status:</strong>
+        <div id="react-status">Checking React build...</div>
+      </div>
+
+      <button onclick="testAPI()" style="margin: 10px 5px; padding: 10px 20px;">Test API Connection</button>
+      <button onclick="loadMainApp()" style="margin: 10px 5px; padding: 10px 20px;">Load Main App</button>
+      <button onclick="openDevTools()" style="margin: 10px 5px; padding: 10px 20px;">Open Dev Tools</button>
+    </div>
+
+    <script>
+      // Display version information
+      try {
+        document.getElementById('electron-version').textContent = process.versions.electron || 'N/A';
+        document.getElementById('node-version').textContent = process.versions.node || 'N/A';
+        document.getElementById('chrome-version').textContent = process.versions.chrome || 'N/A';
+      } catch (e) {
+        document.getElementById('electron-version').textContent = 'Not available (security context)';
+        document.getElementById('node-version').textContent = 'Not available (security context)';
+        document.getElementById('chrome-version').textContent = 'Not available (security context)';
+      }
+      
+      document.getElementById('current-url').textContent = window.location.href;
+
+      // Test API connection
+      async function testAPI() {
+        const statusDiv = document.getElementById('api-status');
+        try {
+          const response = await fetch('http://localhost:8000/health');
+          if (response.ok) {
+            const data = await response.json();
+            statusDiv.innerHTML = `<div class="success">✅ API Connected: ${data.status}</div>`;
+          } else {
+            statusDiv.innerHTML = `<div class="error">❌ API Error: ${response.status}</div>`;
+          }
+        } catch (error) {
+          statusDiv.innerHTML = `<div class="error">❌ Connection Failed: ${error.message}</div>`;
+        }
+      }
+
+      // Check if main app files exist
+      function checkFiles() {
+        const fileDiv = document.getElementById('file-status');
+        try {
+          // Try to load the main CSS file
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = './assets/main-D1t_Xrol.css';
+          link.onload = () => {
+            fileDiv.innerHTML += '<div class="success">✅ CSS file loaded</div>';
+          };
+          link.onerror = () => {
+            fileDiv.innerHTML += '<div class="error">❌ CSS file missing</div>';
+          };
+          document.head.appendChild(link);
+
+          // Check for JS file
+          const script = document.createElement('script');
+          script.src = './assets/main-Bje63hPB.js';
+          script.onload = () => {
+            fileDiv.innerHTML += '<div class="success">✅ JS file loaded</div>';
+          };
+          script.onerror = () => {
+            fileDiv.innerHTML += '<div class="error">❌ JS file missing</div>';
+          };
+          // Don't append to avoid execution
+
+        } catch (error) {
+          fileDiv.innerHTML = `<div class="error">❌ File check failed: ${error.message}</div>`;
+        }
+      }
+
+      // Load main application
+      function loadMainApp() {
+        console.log('Loading main React application...');
+        window.location.href = './dist/index.html';
+      }
+
+      // Open dev tools
+      function openDevTools() {
+        if (window.electronAPI && window.electronAPI.openDevTools) {
+          window.electronAPI.openDevTools();
+        } else if (window.require) {
+          // Alternative method for Electron
+          try {
+            const { remote } = window.require('electron');
+            remote.getCurrentWindow().webContents.openDevTools();
+          } catch (e) {
+            console.log('Could not open dev tools:', e);
+            alert('Developer tools not available. Try pressing F12 or Ctrl+Shift+I');
+          }
+        } else {
+          // Fallback - try to open browser dev tools
+          if (navigator.userAgent.includes('Electron')) {
+            alert('Press F12 or Ctrl+Shift+I to open Developer Tools');
+          } else {
+            // For web browsers
+            console.log('This appears to be a web browser. Press F12 to open dev tools.');
+            alert('Press F12 to open Developer Tools');
+          }
+        }
+      }
+
+      // Run checks on load
+      window.onload = () => {
+        testAPI();
+        checkFiles();
+      };
+    </script>
+  </body>
+</html>

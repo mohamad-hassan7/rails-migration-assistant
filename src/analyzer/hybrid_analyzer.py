@@ -626,6 +626,9 @@ class HybridRailsAnalyzer:
         
         self.tier2_analyzer = Tier2RAGAnalyzer(retriever, target_version="7.0")
         
+        # Expose retriever for external access
+        self.retriever = retriever
+        
         # File context cache for optimization
         self.file_context_cache = {}
         

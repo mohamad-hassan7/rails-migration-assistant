@@ -1,16 +1,12 @@
-# ===================================================================
-# Rails Upgrade Agent - Git Ignore Configuration
-# ===================================================================
+# Rails Migration Assistant - Git Ignore Configuration
 
 # Environment Variables
-# ----------------------
 .env
 .env.local
 .env.production
 .env.development
 
 # Python
-# -------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -35,16 +31,15 @@ share/python-wheels/
 MANIFEST
 
 # Virtual Environments
-# --------------------
 .venv/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+rails_env/
 
 # IDE & Editors
-# -------------
 .vscode/
 .idea/
 *.swp
@@ -54,7 +49,6 @@ venv.bak/
 Thumbs.db
 
 # AI/ML Models & Cache
-# --------------------
 models/
 .cache/
 *.ckpt
@@ -64,15 +58,18 @@ models/
 .huggingface/
 
 # Data & Indexes (keep structure, ignore large files)
-# ---------------------------------------------------
 data/docs/*
 !data/docs/.gitkeep
 data/*.index
 data/*.jsonl
 *.faiss
 
+# Frontend Dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.cache/
+
 # Temporary Files
-# ---------------
 tmp/
 temp/
 .tmp/
@@ -81,7 +78,6 @@ temp/
 .logs/
 
 # Output Files
-# ------------
 output/
 results/
 reports/
@@ -89,7 +85,6 @@ reports/
 generated_*.json
 
 # Testing
-# -------
 .pytest_cache/
 .coverage
 htmlcov/
@@ -102,25 +97,17 @@ coverage.xml
 .hypothesis/
 
 # Jupyter Notebooks
-# ------------------
 .ipynb_checkpoints/
 *.ipynb
 
-# macOS
-# -----
+# OS Files
 .DS_Store
 .AppleDouble
 .LSOverride
-
-# Windows
-# -------
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-
-# Linux
-# -----
 *~
 .fuse_hidden*
 .directory
@@ -128,43 +115,19 @@ $RECYCLE.BIN/
 .nfs*
 
 # Git
-# ---
 *.orig
 
-# Project Specific
-# ----------------
-# Keep sample files but ignore user-generated content
-examples/user_*
-examples/generated_*
-examples/my_*
-
-# Sample Rails Applications
-# -------------------------
-sample_rails_upgrade/
-sample_app/
-test_app/
-demo_app/
-example_rails_*/
-
-# Backup files
-# ------------
-*.backup
-*.bak
-*~
-
 # Archives
-# --------
 *.zip
 *.tar.gz
 *.rar
 
-# ===================================================================
-# Keep these files/directories:
-# - data/docs/.gitkeep (to maintain directory structure)
-# - examples/*.md (documentation examples)  
-# - src/ (all source code)
-# - tests/ (all test files)
-# - docs/ (documentation)
-# - requirements.txt (dependencies)
-# - .env.example (template)
-# ===================================================================
+# Sample Rails Applications (for testing only)
+sample_rails_upgrade/log/
+sample_rails_upgrade/tmp/
+sample_rails_upgrade/.bundle/
+sample_rails_upgrade/db/*.sqlite3
+
+# Backup files
+*.backup
+*.bak

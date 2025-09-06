@@ -1,177 +1,251 @@
 #!/usr/bin/env python3
 """
-Rails Migration Assistant - Production Launcher
-==============================================
-
-This launcher provides a clean entry point for the Rails Migration Assistant
-with automatic environment setup and error handling.
-
-Usage:
-    python launcher.py              # Launch GUI
-    python launcher.py --cli        # Launch CLI mode
-    python launcher.py --analyze PROJECT_PATH  # Direct analysis
+Rails Migration Assistant - Modern Launcher
+A comprehensive tool for Rails application migration analysis and assistance.
 """
 
 import sys
 import os
 import subprocess
 import argparse
+import time
 from pathlib import Path
 
-# Add src to Python path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
 def check_environment():
-    """Check if the environment is properly set up."""
+    """Check if required dependencies are available."""
     print("🔍 Checking environment...")
     
-    # Check if we're in conda environment
-    conda_env = os.environ.get('CONDA_DEFAULT_ENV')
-    if conda_env:
-        print(f"🐍 Conda environment: {conda_env}")
-    
     # Check Python version
-    if sys.version_info < (3, 9):
-        print("❌ Python 3.9+ required")
+    python_version = sys.version_info
+    if python_version.major < 3 or (python_version.major == 3 and python_version.minor < 8):
+        print("❌ Python 3.8+ is required")
         return False
+    print(f"✅ Python {python_version.major}.{python_version.minor}.{python_version.micro}")
     
-    # Check core packages (essential)
-    core_packages = ['tkinter']
-    missing_core = []
+    # Check required Python packages
+    required_packages = ['torch', 'transformers', 'fastapi', 'uvicorn']
+    missing_packages = []
     
-    for package in core_packages:
+    for package in required_packages:
         try:
-            if package == 'tkinter':
-                import tkinter
-            else:
-                __import__(package)
+            __import__(package)
+            print(f"✅ {package}")
         except ImportError:
-            missing_core.append(package)
+            print(f"❌ {package}")
+            missing_packages.append(package)
     
-    # Check optional AI packages
-    ai_packages = ['torch', 'transformers', 'faiss', 'accelerate', 'numpy', 'datasets']
-    missing_ai = []
+    if missing_packages:
+        print(f"\n📦 Missing packages: {', '.join(missing_packages)}")
+        print("Run: pip install -r requirements.txt")
+        return False
     
-    for package in ai_packages:
+    # Check Node.js for frontend
+    node_available = False
+    npm_available = False
+    
+    # Check Node.js
+    try:
+        result = subprocess.run(['node', '--version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"✅ Node.js {result.stdout.strip()}")
+            node_available = True
+        else:
+            print("⚠️  Node.js not found (frontend will not be available)")
+    except FileNotFoundError:
+        print("⚠️  Node.js not found (frontend will not be available)")
+    
+    # Check npm
+    npm_commands = ["npm", "npm.cmd", "npm.exe"]
+    for cmd in npm_commands:
         try:
-            if package == 'faiss':
-                import faiss  # faiss-cpu imports as 'faiss'
-            else:
-                __import__(package)
-        except ImportError:
-            missing_ai.append(package)
+            result = subprocess.run([cmd, '--version'], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ npm {result.stdout.strip()}")
+                npm_available = True
+                break
+        except FileNotFoundError:
+            continue
     
-    if missing_core:
-        print(f"❌ Missing critical packages: {', '.join(missing_core)}")
-        return False
-    
-    if missing_ai:
-        print(f"⚠️  AI packages missing: {', '.join(missing_ai)}")
-        print("💡 For full functionality: pip install torch transformers faiss-cpu accelerate numpy datasets")
-        print("✅ Basic environment OK - GUI will work with limited features")
-        print("✅ Basic environment OK - GUI will work with limited features")
-    else:
-        print("✅ Full environment check passed")
+    if node_available and not npm_available:
+        print("⚠️  npm not found (frontend will not be available)")
     
     return True
 
-def launch_gui():
-    """Launch the GUI application."""
-    print("🚀 Launching Rails Migration Assistant GUI...")
+def start_backend():
+    """Start the FastAPI backend server."""
+    print("\n🚀 Starting FastAPI backend...")
     try:
-        from rails_migration_assistant import main as gui_main
-        gui_main()
-    except Exception as e:
-        print(f"❌ GUI launch failed: {e}")
-        print("💡 Try running: python rails_migration_assistant.py")
+        import uvicorn
+        from api_bridge import app
+        
+        print("📡 Backend server starting on http://localhost:8000")
+        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    except ImportError as e:
+        print(f"❌ Failed to start backend: {e}")
+        print("Make sure FastAPI and uvicorn are installed: pip install fastapi uvicorn")
         return False
-    return True
-
-def launch_cli():
-    """Launch the CLI application."""
-    print("🚀 Launching Rails Migration Assistant CLI...")
-    try:
-        from src.analyzer.hybrid_analyzer import main as cli_main
-        cli_main()
     except Exception as e:
-        print(f"❌ CLI launch failed: {e}")
+        print(f"❌ Backend error: {e}")
         return False
-    return True
 
-def analyze_project(project_path):
-    """Analyze a project directly."""
-    print(f"🔍 Analyzing project: {project_path}")
+def start_frontend():
+    """Start the React frontend."""
+    print("\n🌐 Starting React frontend...")
+    frontend_dir = Path("frontend")
     
-    if not os.path.exists(project_path):
-        print(f"❌ Project path not found: {project_path}")
+    if not frontend_dir.exists():
+        print("❌ Frontend directory not found")
         return False
     
-    try:
-        from src.analyzer.hybrid_analyzer import HybridRailsAnalyzer
-        
-        analyzer = HybridRailsAnalyzer()
-        results = analyzer.analyze_project(project_path)
-        
-        print(f"\n✅ Analysis complete!")
-        print(f"   📁 Files analyzed: {results.get('analyzed_files', 0)}")
-        print(f"   ⚠️  Issues found: {results.get('total_suggestions', 0)}")
-        
-        return True
-    except Exception as e:
-        print(f"❌ Analysis failed: {e}")
+    # Try to find npm command
+    npm_commands = ["npm", "npm.cmd", "npm.exe"]
+    npm_cmd = None
+    
+    for cmd in npm_commands:
+        try:
+            subprocess.run([cmd, "--version"], capture_output=True, check=True)
+            npm_cmd = cmd
+            break
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+    
+    if not npm_cmd:
+        print("❌ npm command not found. Please ensure Node.js is installed and npm is in PATH")
+        print("💡 You can manually run: cd frontend && npm start")
         return False
+    
+    print(f"✅ Using npm command: {npm_cmd}")
+    
+    # Check if node_modules exists
+    node_modules = frontend_dir / "node_modules"
+    if not node_modules.exists():
+        print("📦 Installing frontend dependencies...")
+        try:
+            subprocess.run([npm_cmd, "install"], cwd=frontend_dir, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to install frontend dependencies: {e}")
+            return False
+    
+    # Start the frontend
+    try:
+        print("🎨 Starting React development server...")
+        print(f"🌐 Frontend will be available at: http://localhost:3000")
+        subprocess.run([npm_cmd, "start"], cwd=frontend_dir)
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to start frontend: {e}")
+        return False
+    except FileNotFoundError as e:
+        print(f"❌ npm command not found: {e}")
+        print("💡 You can manually run: cd frontend && npm start")
+        return False
+    except KeyboardInterrupt:
+        print("\n🛑 Frontend stopped")
+    
+    return True
+
+def start_full_stack():
+    """Start both backend and frontend."""
+    print("\n🔄 Starting full-stack application...")
+    
+    # Start backend in background
+    import threading
+    backend_thread = threading.Thread(target=start_backend, daemon=True)
+    backend_thread.start()
+    
+    # Wait a moment for backend to start
+    print("⏳ Waiting for backend to initialize...")
+    time.sleep(3)
+    
+    # Start frontend (blocking)
+    start_frontend()
+
+def direct_analysis(query=None, project_path=None):
+    """Run direct analysis without GUI."""
+    print("\n🔍 Running direct analysis...")
+    
+    try:
+        from rails_migration_assistant import RailsMigrationAssistant
+        
+        assistant = RailsMigrationAssistant()
+        
+        if project_path:
+            print(f"📁 Analyzing project: {project_path}")
+            result = assistant.analyze_project(project_path)
+        elif query:
+            print(f"❓ Processing query: {query}")
+            result = assistant.process_query(query)
+        else:
+            print("❓ Interactive mode - enter your query:")
+            query = input("> ")
+            result = assistant.process_query(query)
+        
+        print("\n📋 Analysis Result:")
+        print("=" * 50)
+        print(result)
+        
+    except ImportError as e:
+        print(f"❌ Analysis module not available: {e}")
+    except Exception as e:
+        print(f"❌ Analysis error: {e}")
 
 def main():
     """Main launcher function."""
-    print("=" * 60)
-    print("🚀 RAILS MIGRATION ASSISTANT")
-    print("   Professional Rails Upgrade Tool")
-    print("=" * 60)
-    
     parser = argparse.ArgumentParser(
-        description="Rails Migration Assistant Launcher",
+        description="Rails Migration Assistant - Modern Launcher",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python launcher.py                    # Launch GUI
-  python launcher.py --cli              # Launch CLI
-  python launcher.py --analyze ./app    # Analyze project
-  python launcher.py --check            # Check environment only
+  python launcher.py                    # Start full-stack application
+  python launcher.py --backend          # Start only backend API
+  python launcher.py --frontend         # Start only frontend
+  python launcher.py --analyze "query"  # Direct analysis
         """
     )
     
-    parser.add_argument("--cli", action="store_true", 
-                       help="Launch in CLI mode")
-    parser.add_argument("--analyze", metavar="PATH", 
-                       help="Analyze project at PATH")
-    parser.add_argument("--check", action="store_true",
-                       help="Check environment only")
+    parser.add_argument('--backend', action='store_true', 
+                       help='Start only the FastAPI backend server')
+    parser.add_argument('--frontend', action='store_true', 
+                       help='Start only the React frontend')
+    parser.add_argument('--analyze', type=str, metavar='QUERY',
+                       help='Run direct analysis with the given query')
+    parser.add_argument('--project', type=str, metavar='PATH',
+                       help='Analyze a specific Rails project path')
+    parser.add_argument('--check', action='store_true',
+                       help='Check environment and dependencies')
     
     args = parser.parse_args()
     
-    # Always check environment first
-    if not check_environment():
-        print("\n❌ Environment check failed. Please fix issues and try again.")
-        return 1
+    print("🚀 Rails Migration Assistant - Modern Launcher")
+    print("=" * 50)
     
+    # Check environment first
     if args.check:
-        print("\n✅ Environment check complete!")
-        return 0
+        check_environment()
+        return
     
-    # Launch based on arguments
-    if args.analyze:
-        success = analyze_project(args.analyze)
-    elif args.cli:
-        success = launch_cli()
-    else:
-        success = launch_gui()
+    if not check_environment():
+        print("\n❌ Environment check failed. Please fix the issues above.")
+        sys.exit(1)
     
-    if success:
-        print("\n✅ Rails Migration Assistant completed successfully!")
-        return 0
-    else:
-        print("\n❌ Rails Migration Assistant encountered an error.")
-        return 1
+    try:
+        if args.backend:
+            start_backend()
+        elif args.frontend:
+            start_frontend()
+        elif args.analyze:
+            direct_analysis(query=args.analyze, project_path=args.project)
+        elif args.project:
+            direct_analysis(project_path=args.project)
+        else:
+            # Default: start full-stack application
+            start_full_stack()
+    
+    except KeyboardInterrupt:
+        print("\n\n🛑 Application stopped by user")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

@@ -79,7 +79,7 @@ python launcher.py --backend   # API server only
 python launcher.py --frontend  # Electron app only
 ```
 
-## � Usage
+## 📖 Usage
 
 ### Project Mode
 1. **Select Rails Project**: Browse to your Rails project directory
@@ -87,7 +87,9 @@ python launcher.py --frontend  # Electron app only
 3. **Configure Backups**: Enable automatic backups (recommended)
 4. **Run Analysis**: Click "Analyze Project" for real-time scanning
 5. **Review Suggestions**: Navigate through code suggestions with explanations
-6. **Apply Changes**: Accept, reject, or skip individual suggestions
+6. **Manual Application**: Copy suggested changes and apply them manually to your code
+
+> **⚠️ Important**: This tool provides suggestions only and does **not automatically modify your files**. All changes must be manually reviewed and applied. This ensures complete control over your codebase and prevents accidental modifications.
 
 ### Query Mode
 1. **Ask Questions**: Type Rails-related questions
@@ -113,7 +115,25 @@ python launcher.py --frontend  # Electron app only
 - Version-specific guidance
 - Historical change analysis
 
-## 🔧 Configuration
+## �️ Safety Features
+
+### Read-Only Analysis
+- **No Automatic File Modification**: The tool analyzes code but never automatically modifies your files
+- **Suggestion-Based Workflow**: All changes are presented as suggestions requiring manual review
+- **Complete User Control**: You decide which suggestions to implement and how
+
+### File Safety
+- **Backup Recommendations**: Always create backups before manually applying suggestions
+- **Line-by-Line Analysis**: Precise identification of issues with specific line numbers
+- **Risk Assessment**: Each suggestion includes confidence levels and risk indicators
+
+### Best Practices
+- Review all suggestions carefully before implementing
+- Test changes in a development environment first
+- Run your Rails test suite after applying changes
+- Consider gradual migration rather than bulk changes
+
+## �🔧 Configuration
 
 ### Environment Variables
 Create `.env` file:
@@ -216,10 +236,54 @@ python launcher.py --check  # Verify environment
 - Check firewall settings
 - Verify Node.js installation
 
+**Empty Files After Git Operations**
+- Run cleanup to remove empty files: `Get-ChildItem -Recurse -File | Where-Object { $_.Length -eq 0 } | Remove-Item`
+- Or use the built-in project scanner to identify issues
+
 ### Performance Tips
 - Use GPU acceleration for best performance
 - Close other GPU-intensive applications
 - Use 4-bit quantization for lower memory usage
+- Clean up empty files regularly to maintain project hygiene
+
+## 🤝 Contributing
+
+We welcome contributions! Here are some ways to get involved:
+
+### Areas for Improvement
+- **Additional Rails Pattern Detection**: Add more deprecation patterns to Tier 1 analyzer
+- **Enhanced AI Prompts**: Improve LLM prompts for better code suggestions
+- **UI/UX Improvements**: Enhance the React frontend interface
+- **Performance Optimizations**: Reduce memory usage and improve analysis speed
+- **Testing**: Add comprehensive test coverage
+- **Documentation**: Improve inline code documentation
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Install development dependencies: `pip install -r requirements-dev.txt` (if available)
+4. Make your changes and test thoroughly
+5. Submit a pull request with detailed description
+
+### Code Style
+- Follow PEP 8 for Python code
+- Use ESLint/Prettier for JavaScript/React code
+- Include type hints where appropriate
+- Add docstrings to new functions and classes
+
+## 📞 Support
+
+### Getting Help
+- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/mohamed7456/rails-migration-assistant/issues)
+- **Discussions**: Join conversations on [GitHub Discussions](https://github.com/mohamed7456/rails-migration-assistant/discussions)
+- **Documentation**: Check this README and inline code documentation
+
+### Known Limitations
+- CPU-only performance is significantly slower than GPU
+- Large Rails projects may require substantial processing time
+- AI suggestions require manual review and implementation
+- Limited to Rails 4.0+ migration paths
+- Some complex refactoring patterns may not be detected
 
 ## 📄 License
 

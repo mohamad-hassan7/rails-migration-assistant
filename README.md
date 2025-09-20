@@ -240,43 +240,12 @@ python launcher.py --check  # Verify environment
 - Run cleanup to remove empty files: `Get-ChildItem -Recurse -File | Where-Object { $_.Length -eq 0 } | Remove-Item`
 - Or use the built-in project scanner to identify issues
 
+
 ### Performance Tips
 - Use GPU acceleration for best performance
 - Close other GPU-intensive applications
 - Use 4-bit quantization for lower memory usage
 - Clean up empty files regularly to maintain project hygiene
-
-## 🤝 Contributing
-
-We welcome contributions! Here are some ways to get involved:
-
-### Areas for Improvement
-- **Additional Rails Pattern Detection**: Add more deprecation patterns to Tier 1 analyzer
-- **Enhanced AI Prompts**: Improve LLM prompts for better code suggestions
-- **UI/UX Improvements**: Enhance the React frontend interface
-- **Performance Optimizations**: Reduce memory usage and improve analysis speed
-- **Testing**: Add comprehensive test coverage
-- **Documentation**: Improve inline code documentation
-
-### Development Setup
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Install development dependencies: `pip install -r requirements-dev.txt` (if available)
-4. Make your changes and test thoroughly
-5. Submit a pull request with detailed description
-
-### Code Style
-- Follow PEP 8 for Python code
-- Use ESLint/Prettier for JavaScript/React code
-- Include type hints where appropriate
-- Add docstrings to new functions and classes
-
-## 📞 Support
-
-### Getting Help
-- **Issues**: Report bugs and request features on [GitHub Issues](https://github.com/mohamed7456/rails-migration-assistant/issues)
-- **Discussions**: Join conversations on [GitHub Discussions](https://github.com/mohamed7456/rails-migration-assistant/discussions)
-- **Documentation**: Check this README and inline code documentation
 
 ### Known Limitations
 - CPU-only performance is significantly slower than GPU
